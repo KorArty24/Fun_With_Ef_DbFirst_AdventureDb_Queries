@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using EFCore_DBLibrary;
+using FunWithEFAdventureReverse.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -22,7 +23,8 @@ namespace FunWithEFAdventureReverse {
             //ListAllSalesMen();
             // ReturnUniqueJobTitles();
             //ReturnTotalFreight();
-            ReturnSubtotal();
+            //ReturnSubtotal();
+            ReturnProductionInventory();
 
         }
         static void BuildConfiguration()
@@ -169,6 +171,12 @@ namespace FunWithEFAdventureReverse {
         #endregion
 
         #region average_sum_and_subtotal
+        /// <summary>
+        /// find the average and the sum of the subtotal for every customer.
+        /// Return customerid, average and sum of the subtotal. 
+        /// Grouped the result on customerid and salespersonid.
+        /// Sort the result on customerid column in descending order.
+        /// </summary>
         private static void ReturnSubtotal() 
         {
             using (var db = new AdWorksContext(_optionsBuilder.Options))
@@ -179,7 +187,7 @@ namespace FunWithEFAdventureReverse {
                                  CusId = so.CustomerId,
                                  SaOPersonId = so.SalesPersonId
                              } into sgroup
-                             orderby sgroup.Key.SaOPersonId
+                             orderby sgroup.Key.SaOPersonId descending
                              select new
                              {
                                  CusId = sgroup.Key.CusId,
@@ -205,6 +213,35 @@ namespace FunWithEFAdventureReverse {
                     Key = customer,
                     Total = totalfreight.Sum()
                 }).OrderBy(order=>order.Key);
+            }
+        }
+        #endregion
+
+        #region get ACH more 500
+        /// <summary>
+        /// retrieve total quantity of each productid which are in shelf of 'A' or 'C' or 'H'. 
+        /// Filter the results for sum quantity is more than 500. Return productid and sum of the quantity
+        /// </summary>
+        private static void ReturnProductionInventory()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                char[] headers = { 'A', 'C', 'H' };
+                string[] dord = {"A", "C", "S" };
+                var cond = dord.Where(x=>x.StartsWithAnyFromArr(headers));
+                ////used extension method to generilize solution and avoid many &&
+                // var result = db.ProductInventories.AsNoTracking().Select(x=>x.Shelf.StartsWithAnyFromArr(headers));
+                var result = db.ProductInventories.Where(p => p.Shelf.Equals("A") || p.Shelf.Equals("C") || p.Shelf.Equals("H")).
+                    GroupBy(x => x.ProductId, x => x.Quantity, (prodid, quanty) => new
+                    {
+                        Key = prodid,
+                        totalquantity = quanty.Sum(a => (decimal)a)
+                    }).Where(x => x.totalquantity > 500).Select(x => new
+                    {
+                        ProductId = x.Key,
+                        Total = x.totalquantity
+                    }).ToList();
+
             }
         }
         #endregion
