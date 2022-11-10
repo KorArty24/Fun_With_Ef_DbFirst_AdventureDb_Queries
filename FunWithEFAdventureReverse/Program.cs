@@ -263,7 +263,6 @@ namespace FunWithEFAdventureReverse {
                     LastName = per.LastName,
                     PhoneNum = per.PersonPhones.Select(x => x.PhoneNumber).FirstOrDefault()
                 }).OrderBy(x=>x.LastName).ThenBy(x=>x.FirstName).ToList();
-               
             }
         }
         #endregion
