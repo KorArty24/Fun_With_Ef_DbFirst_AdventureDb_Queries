@@ -24,8 +24,8 @@ namespace FunWithEFAdventureReverse {
             // ReturnUniqueJobTitles();
             //ReturnTotalFreight();
             //ReturnSubtotal();
-            ReturnProductionInventory();
-
+            // ReturnProductionInventory();
+            ReturnLastNamesWith_L();
         }
         static void BuildConfiguration()
         {
@@ -242,6 +242,28 @@ namespace FunWithEFAdventureReverse {
                         Total = x.totalquantity
                     }).ToList();
 
+            }
+        }
+        #endregion
+
+        #region FindLinLastName
+        /// <summary>
+        /// find the persons whose last name starts with letter 'L'. Return BusinessEntityID, FirstName, LastName, and PhoneNumber.
+        /// Sort the result on lastname and firstname
+        /// </summary>
+        private static void ReturnLastNamesWith_L()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                string schar = "L";
+                var query = db.People.Include(p => p.PersonPhones).AsNoTracking().Where(x => x.LastName.StartsWith(schar)).Select(per => new
+                {
+                    BusinessEntityId = per.BusinessEntityId,
+                    FirstName = per.FirstName,
+                    LastName = per.LastName,
+                    PhoneNum = per.PersonPhones.Select(x => x.PhoneNumber).FirstOrDefault()
+                }).OrderBy(x=>x.LastName).ThenBy(x=>x.FirstName).ToList();
+               
             }
         }
         #endregion
