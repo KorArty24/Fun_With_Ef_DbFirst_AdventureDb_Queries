@@ -20,8 +20,9 @@ namespace FunWithEFAdventureReverse {
             //ListPeople();
             //ListEmployee();
             //ListAllSalesMen();
-           // ReturnUniqueJobTitles();
-            ReturnTotalFreight();
+            // ReturnUniqueJobTitles();
+            //ReturnTotalFreight();
+            ReturnSubtotal();
 
         }
         static void BuildConfiguration()
@@ -165,6 +166,30 @@ namespace FunWithEFAdventureReverse {
                 var prodlinesubset = db.Employees.AsNoTracking().Select(em => em.JobTitle).Distinct().OrderBy(x=>x).Take(200).ToList();
             }
         }
+        #endregion
+
+        #region average_sum_and_subtotal
+        private static void ReturnSubtotal() 
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var result = from so in db.SalesOrderHeaders.AsNoTracking()
+                             group so by new
+                             {
+                                 CusId = so.CustomerId,
+                                 SaOPersonId = so.SalesPersonId
+                             } into sgroup
+                             orderby sgroup.Key.SaOPersonId
+                             select new
+                             {
+                                 CusId = sgroup.Key.CusId,
+                                 SaOPersonId = sgroup.Key.SaOPersonId,
+                                 Subtotal = sgroup.Sum(x=>x.SubTotal),
+                                 Average = sgroup.Average(x => x.SubTotal)
+                             };
+            }
+        }
+
         #endregion
 
         #region calculate the total fregith
