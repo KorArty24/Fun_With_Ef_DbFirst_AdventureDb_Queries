@@ -25,7 +25,8 @@ namespace FunWithEFAdventureReverse {
             //ReturnTotalFreight();
             //ReturnSubtotal();
             // ReturnProductionInventory();
-            ReturnLastNamesWith_L();
+            //ReturnLastNamesWith_L();
+            FindTheSumOfSubtotal();
         }
         static void BuildConfiguration()
         {
@@ -263,6 +264,35 @@ namespace FunWithEFAdventureReverse {
                     LastName = per.LastName,
                     PhoneNum = per.PersonPhones.Select(x => x.PhoneNumber).FirstOrDefault()
                 }).OrderBy(x=>x.LastName).ThenBy(x=>x.FirstName).ToList();
+            }
+        }
+        #endregion
+
+        #region FindTheSumOfSubtotal
+        /// <summary>
+        ///  find the sum of subtotal column. Group the sum on distinct salespersonid and customerid. 
+        ///  Rolls up the results into subtotal and running total. 
+        ///  Return salespersonid, customerid and sum of subtotal column i.e. sum_subtotal. 
+        /// </summary>
+        private static void FindTheSumOfSubtotal()
+        {
+             using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+
+                var query = from header in db.SalesOrderHeaders.AsNoTracking()
+                            group header by new
+                            {
+                                SalesPersonId = header.SalesPersonId,
+                                CustomerId = header.CustomerId
+                            } into salesgroup
+                            select new
+                            {
+                                SalesPersonId = salesgroup.Key.SalesPersonId,
+                                CustomerId = salesgroup.Key.CustomerId,
+                                SumSubtotal = salesgroup.Sum(x => x.SubTotal)
+                            };
+                var result = query.ToList();
+
             }
         }
         #endregion
