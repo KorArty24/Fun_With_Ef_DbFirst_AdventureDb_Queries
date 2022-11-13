@@ -38,7 +38,7 @@ namespace FunWithEFAdventureReverse {
             _dict.Add(11, () => FindTheSumOfSubtotal());
             _dict.Add(12, () => FindTheEmployeesForEachCity());
             _dict.Add(13, () => FindTotalSalesForEachYear());
-            //_dict.Add(14, ()=>)
+            _dict.Add(14, () => FindTotalSalesForEachYearFilteredByYear());
 
         }
 
@@ -362,6 +362,32 @@ namespace FunWithEFAdventureReverse {
             }
         }
         #endregion
+
+        #region FindTotalSalesFoEachYearFiltered
+        /// <summary>
+        /// write a query in SQL to retrieve the total sales for each year. to retrieve the total sales for each year. 
+        /// Filter the result set for those orders where order year is on or before 2016.
+        /// Return the year part of orderdate and total due amount. Sort the result in ascending order on year part of order date.
+        /// </summary>
+        private static void FindTotalSalesForEachYearFilteredByYear()
+        {
+            
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var query = db.SalesOrderHeaders.AsNoTracking().Where(x=>x.OrderDate.Year <= 2016).GroupBy(s => s.OrderDate.Year, s => s.TotalDue, (year, total) => new
+                {
+                    Year = year,
+                    OrderAmount = total.Sum()
+                }).Select(x => new
+                {
+                    Year = x.Year,
+                    OrderAmount = x.OrderAmount
+                }).OrderBy(x=>x.Year).ToList();
+                
+            }
+        }
+        #endregion
+
 
 
         #region ConsoleOutputFunctions
