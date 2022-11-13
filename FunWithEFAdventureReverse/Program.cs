@@ -6,27 +6,45 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Generic;
 
 namespace FunWithEFAdventureReverse { 
     internal class Program
     {
         private static DbContextOptionsBuilder<AdWorksContext> _optionsBuilder;
         private static IConfigurationRoot _configuration;
+        
         static void Main(string[] args)
         {
+            var dict = new Dictionary<int, Action>();
             BuildConfiguration();
             BuildOptions();
-            //ReturnPercentageOfTax();
-            //UniqueJobTitles();
-            //ListPeople();
-            //ListEmployee();
-            //ListAllSalesMen();
-            // ReturnUniqueJobTitles();
-            //ReturnTotalFreight();
-            //ReturnSubtotal();
-            // ReturnProductionInventory();
-            //ReturnLastNamesWith_L();
-            FindTheSumOfSubtotal();
+            registerMethods(ref dict);
+            returnAction(dict, dict.Count()).Invoke();
+        }
+
+        private static void registerMethods(ref Dictionary<int, Action> _dict)
+        {
+            _dict.Add(1,()=> ListAllSalesMen());
+            _dict.Add(2,()=> ReturnUniqueJobTitles());
+            _dict.Add(3,()=> ListPeople());
+            _dict.Add(4,()=> ListEmployee());
+            _dict.Add(5, () => ListAllSalesMen());
+            _dict.Add(6, () => ReturnUniqueJobTitles());
+            _dict.Add(7, () => ReturnTotalFreight());
+            _dict.Add(8, () => ReturnSubtotal());
+            _dict.Add(9, ()=> ReturnProductionInventory());
+            _dict.Add(10, () => ReturnLastNamesWith_L());
+            _dict.Add(11, () => FindTheSumOfSubtotal());
+            _dict.Add(12, () => FindTheEmployeesForEachCity());
+            _dict.Add(13, () => FindTotalSalesForEachYear());
+            //_dict.Add(14, ()=>)
+
+        }
+
+        static Action returnAction (IDictionary<int,Action> dic, int key)
+        {
+            return dic[key];
         }
         static void BuildConfiguration()
         {
@@ -59,6 +77,7 @@ namespace FunWithEFAdventureReverse {
             }
             
         }
+
         #region ListEmployee
         static void ListEmployee()
         {
@@ -86,12 +105,12 @@ namespace FunWithEFAdventureReverse {
             }
         }
         #endregion
-       
+
 
         #region ListAllSalesMen
         static void ListAllSalesMen()
         {
-             using (var db = new AdWorksContext(_optionsBuilder.Options))
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
                 var salespeople = db.SalesPeople.Include(x => x.BusinessEntity).ThenInclude(y => y.BusinessEntity).AsNoTracking().ToList();
                 foreach (var salesperson in salespeople)
@@ -278,7 +297,6 @@ namespace FunWithEFAdventureReverse {
         {
              using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
-
                 var query = from header in db.SalesOrderHeaders.AsNoTracking()
                             group header by new
                             {
@@ -292,10 +310,59 @@ namespace FunWithEFAdventureReverse {
                                 SumSubtotal = salesgroup.Sum(x => x.SubTotal)
                             };
                 var result = query.ToList();
-
             }
         }
         #endregion
+
+        #region FindTheEmployeesForEachCity
+        /// <summary>
+        /// write a query to retrieve the number of employees for each City.
+        /// Return city and number of employees. Sort the result in ascending order on city
+        /// </summary>
+        private static void FindTheEmployeesForEachCity()
+        {
+            
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var query = from address in db.BusinessEntityAddresses.AsNoTracking().Include(a => a.Address)
+                            group address by new
+                            {
+                                City = address.Address.City,
+                            } into addrgroup
+                            select new
+                            {
+                                City = addrgroup.Key.City,
+                                NumOfEmployees = addrgroup.Select(x => x.Address.City).Count()
+                            };
+                var result = query.ToList();
+            }
+        }
+        #endregion
+
+        #region FindTotalSalesFoeEachYear
+        /// <summary>
+        /// write a query in SQL to retrieve the total sales for each year. Return the year part of order date and total due amount. 
+        /// Sort the result in ascending order on year part of order date
+        /// </summary>
+        private static void FindTotalSalesForEachYear()
+        {
+            
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var query = db.SalesOrderHeaders.AsNoTracking().GroupBy(s => s.OrderDate.Year, s => s.TotalDue, (year, total) => new
+                {
+                    Year = year,
+                    OrderAmount = total.Sum()
+                }).Select(x => new
+                {
+                    Year = x.Year,
+                    OrderAmount = x.OrderAmount
+                }).OrderBy(x=>x.Year).ToList();
+                
+            }
+        }
+        #endregion
+
 
         #region ConsoleOutputFunctions
         private static string GetSalespersonDetail(SalesPerson sp)
