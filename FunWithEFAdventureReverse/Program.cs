@@ -8,41 +8,42 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 
-namespace FunWithEFAdventureReverse { 
+namespace FunWithEFAdventureReverse {
     internal class Program
     {
         private static DbContextOptionsBuilder<AdWorksContext> _optionsBuilder;
         private static IConfigurationRoot _configuration;
-        
+
         static void Main(string[] args)
         {
             var dict = new Dictionary<int, Action>();
             BuildConfiguration();
             BuildOptions();
             registerMethods(ref dict);
-            returnAction(dict, dict.Count()).Invoke();
+            returnAction(dict, dict.Count).Invoke();
         }
 
         private static void registerMethods(ref Dictionary<int, Action> _dict)
         {
-            _dict.Add(1,()=> ListAllSalesMen());
-            _dict.Add(2,()=> ReturnUniqueJobTitles());
-            _dict.Add(3,()=> ListPeople());
-            _dict.Add(4,()=> ListEmployee());
+            _dict.Add(1, () => ListAllSalesMen());
+            _dict.Add(2, () => ReturnUniqueJobTitles());
+            _dict.Add(3, () => ListPeople());
+            _dict.Add(4, () => ListEmployee());
             _dict.Add(5, () => ListAllSalesMen());
             _dict.Add(6, () => ReturnUniqueJobTitles());
             _dict.Add(7, () => ReturnTotalFreight());
             _dict.Add(8, () => ReturnSubtotal());
-            _dict.Add(9, ()=> ReturnProductionInventory());
+            _dict.Add(9, () => ReturnProductionInventory());
             _dict.Add(10, () => ReturnLastNamesWith_L());
             _dict.Add(11, () => FindTheSumOfSubtotal());
             _dict.Add(12, () => FindTheEmployeesForEachCity());
             _dict.Add(13, () => FindTotalSalesForEachYear());
             _dict.Add(14, () => FindTotalSalesForEachYearFilteredByYear());
-
+            _dict.Add(15, () => FindManagersInEachDepartment());
+            _dict.Add(16, () => CompoundSelectWithMultipleWhere());
         }
 
-        static Action returnAction (IDictionary<int,Action> dic, int key)
+        static Action returnAction(IDictionary<int, Action> dic, int key)
         {
             return dic[key];
         }
@@ -63,19 +64,19 @@ namespace FunWithEFAdventureReverse {
         {
             using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
-                var salespeople = db.SalesPeople.Include(x => x.BusinessEntity).ThenInclude(y => y.BusinessEntity).ThenInclude(be=>be.Customers).
-                    AsNoTracking().Select(e=> new
+                var salespeople = db.SalesPeople.Include(x => x.BusinessEntity).ThenInclude(y => y.BusinessEntity).ThenInclude(be => be.Customers).
+                    AsNoTracking().Select(e => new
                     {
                         entId = e.BusinessEntityId,
                         addconin = e.BusinessEntity.BusinessEntity.AdditionalContactInfo,
-                        cust= e.BusinessEntity.BusinessEntity.Customers.ToList(),
+                        cust = e.BusinessEntity.BusinessEntity.Customers.ToList(),
                         birtdat = e.BusinessEntity.BirthDate
                     }).ToList();
 
                 var result = salespeople.SelectMany(item => item.cust).Select(x => x.CustomerId);
                 //foreach(var person in result  )
             }
-            
+
         }
 
         #region ListEmployee
@@ -92,13 +93,13 @@ namespace FunWithEFAdventureReverse {
         }
         #endregion
         #region FunWithThenInclude()
-        static void FunWithThenInclude() 
-        { 
+        static void FunWithThenInclude()
+        {
             using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
                 var query = db.SalesPeople.Include(sp => sp.BusinessEntity).ThenInclude(be => be.JobCandidates).Take(4);
                 //var query2 = db.SalesPeople.Include(sp => sp.BusinessEntity).Where(sp => sp.BusinessEntity.JobCandidates.Sum(jk => jk.BusinessEntityId) > 8).ToList();
-                foreach (var person in query) 
+                foreach (var person in query)
                 {
                     Console.WriteLine($"{person.BusinessEntityId}");
                 }
@@ -129,7 +130,7 @@ namespace FunWithEFAdventureReverse {
                 {
                     FirstName = sm.FirstName,
                     LastName = sm.LastName,
-                    EmployeeId = sm.BusinessEntityId 
+                    EmployeeId = sm.BusinessEntityId
                 }).Take(100);
             }
         }
@@ -139,15 +140,15 @@ namespace FunWithEFAdventureReverse {
         /// Returns only the rows for product that have a sellstartdate that is not NULL and a productline of 'T'.
         /// Return productid, productnumber, and name. 
         /// </summary>
-        private static void ReturnProductLineT() 
+        private static void ReturnProductLineT()
         {
             using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
-                var pdoductlinesubset = db.Products.Where(pr=>!pr.SellStartDate.Equals(null)).Select(p => new
+                var pdoductlinesubset = db.Products.Where(pr => !pr.SellStartDate.Equals(null)).Select(p => new
                 {
                     Name = p.Name,
                     productnumber = p.ProductNumber,
-                    ProdId = p.ProductId 
+                    ProdId = p.ProductId
                 }).AsNoTracking().Take(100);
             }
         }
@@ -167,12 +168,12 @@ namespace FunWithEFAdventureReverse {
             {
                 var pdoductlinesubset = db.SalesOrderHeaders.AsNoTracking().Select(so => new
                 {
-                    SalesorderId=so.SalesOrderId,
-                    CustomerId=so.CustomerId,
+                    SalesorderId = so.SalesOrderId,
+                    CustomerId = so.CustomerId,
                     OrderDate = so.OrderDate,
                     Subtotal = so.SubTotal,
-                    TaxRate = Convert.ToDouble(so.TaxAmt*100/so.SubTotal) //considered the faster way than loading in memory and then calculating see msdn "Performance in EF.Core"
-                }).OrderBy(x=>x.Subtotal).Where(x => x.TaxRate > 8.1).Take(300).ToList();
+                    TaxRate = Convert.ToDouble(so.TaxAmt * 100 / so.SubTotal) //considered the faster way than loading in memory and then calculating see msdn "Performance in EF.Core"
+                }).OrderBy(x => x.Subtotal).Where(x => x.TaxRate > 8.1).Take(300).ToList();
             }
         }
         #endregion
@@ -181,11 +182,11 @@ namespace FunWithEFAdventureReverse {
         /// <summary>
         /// create a list of unique jobtitles in the employee table in Adventureworks database. Return jobtitle column and arranged the resultset in ascending order.
         /// </summary>
-        private static void ReturnUniqueJobTitles() 
+        private static void ReturnUniqueJobTitles()
         {
             using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
-                var prodlinesubset = db.Employees.AsNoTracking().Select(em => em.JobTitle).Distinct().OrderBy(x=>x).Take(200).ToList();
+                var prodlinesubset = db.Employees.AsNoTracking().Select(em => em.JobTitle).Distinct().OrderBy(x => x).Take(200).ToList();
             }
         }
         #endregion
@@ -197,7 +198,7 @@ namespace FunWithEFAdventureReverse {
         /// Grouped the result on customerid and salespersonid.
         /// Sort the result on customerid column in descending order.
         /// </summary>
-        private static void ReturnSubtotal() 
+        private static void ReturnSubtotal()
         {
             using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
@@ -212,7 +213,7 @@ namespace FunWithEFAdventureReverse {
                              {
                                  CusId = sgroup.Key.CusId,
                                  SaOPersonId = sgroup.Key.SaOPersonId,
-                                 Subtotal = sgroup.Sum(x=>x.SubTotal),
+                                 Subtotal = sgroup.Sum(x => x.SubTotal),
                                  Average = sgroup.Average(x => x.SubTotal)
                              };
             }
@@ -232,7 +233,7 @@ namespace FunWithEFAdventureReverse {
                 {
                     Key = customer,
                     Total = totalfreight.Sum()
-                }).OrderBy(order=>order.Key);
+                }).OrderBy(order => order.Key);
             }
         }
         #endregion
@@ -247,8 +248,8 @@ namespace FunWithEFAdventureReverse {
             using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
                 char[] headers = { 'A', 'C', 'H' };
-                string[] dord = {"A", "C", "S" };
-                var cond = dord.Where(x=>x.StartsWithAnyFromArr(headers));
+                string[] dord = { "A", "C", "S" };
+                var cond = dord.Where(x => x.StartsWithAnyFromArr(headers));
                 ////used extension method to generilize solution and avoid many &&
                 // var result = db.ProductInventories.AsNoTracking().Select(x=>x.Shelf.StartsWithAnyFromArr(headers));
                 var result = db.ProductInventories.Where(p => p.Shelf.Equals("A") || p.Shelf.Equals("C") || p.Shelf.Equals("H")).
@@ -282,7 +283,7 @@ namespace FunWithEFAdventureReverse {
                     FirstName = per.FirstName,
                     LastName = per.LastName,
                     PhoneNum = per.PersonPhones.Select(x => x.PhoneNumber).FirstOrDefault()
-                }).OrderBy(x=>x.LastName).ThenBy(x=>x.FirstName).ToList();
+                }).OrderBy(x => x.LastName).ThenBy(x => x.FirstName).ToList();
             }
         }
         #endregion
@@ -295,7 +296,7 @@ namespace FunWithEFAdventureReverse {
         /// </summary>
         private static void FindTheSumOfSubtotal()
         {
-             using (var db = new AdWorksContext(_optionsBuilder.Options))
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
                 var query = from header in db.SalesOrderHeaders.AsNoTracking()
                             group header by new
@@ -321,7 +322,7 @@ namespace FunWithEFAdventureReverse {
         /// </summary>
         private static void FindTheEmployeesForEachCity()
         {
-            
+
             using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
                 var query = from address in db.BusinessEntityAddresses.AsNoTracking().Include(a => a.Address)
@@ -346,7 +347,7 @@ namespace FunWithEFAdventureReverse {
         /// </summary>
         private static void FindTotalSalesForEachYear()
         {
-            
+
             using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
                 var query = db.SalesOrderHeaders.AsNoTracking().GroupBy(s => s.OrderDate.Year, s => s.TotalDue, (year, total) => new
@@ -357,24 +358,24 @@ namespace FunWithEFAdventureReverse {
                 {
                     Year = x.Year,
                     OrderAmount = x.OrderAmount
-                }).OrderBy(x=>x.Year).ToList();
-                
+                }).OrderBy(x => x.Year).ToList();
+
             }
         }
         #endregion
 
         #region FindTotalSalesFoEachYearFiltered
         /// <summary>
-        /// write a query in SQL to retrieve the total sales for each year. to retrieve the total sales for each year. 
+        /// write a query to retrieve the total sales for each year. to retrieve the total sales for each year. 
         /// Filter the result set for those orders where order year is on or before 2016.
         /// Return the year part of orderdate and total due amount. Sort the result in ascending order on year part of order date.
         /// </summary>
         private static void FindTotalSalesForEachYearFilteredByYear()
         {
-            
+
             using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
-                var query = db.SalesOrderHeaders.AsNoTracking().Where(x=>x.OrderDate.Year <= 2016).GroupBy(s => s.OrderDate.Year, s => s.TotalDue, (year, total) => new
+                var query = db.SalesOrderHeaders.AsNoTracking().Where(x => x.OrderDate.Year <= 2016).GroupBy(s => s.OrderDate.Year, s => s.TotalDue, (year, total) => new
                 {
                     Year = year,
                     OrderAmount = total.Sum()
@@ -382,8 +383,108 @@ namespace FunWithEFAdventureReverse {
                 {
                     Year = x.Year,
                     OrderAmount = x.OrderAmount
-                }).OrderBy(x=>x.Year).ToList();
-                
+                }).OrderBy(x => x.Year).ToList();
+
+            }
+        }
+        #endregion
+
+        #region FindManagersInEachDepartment()
+        /// <summary>
+        ///  to find the contacts who are designated as a manager in various departments.
+        ///  Returns ContactTypeID, name. Sort the result set in descending order.
+        /// </summary>
+        private static void FindManagersInEachDepartment()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var query = db.ContactTypes.Where(x => x.Name.Contains("Manager")).Select(per => new
+                {
+                    ContactTypeId = per.ContactTypeId,
+                    Name = per.Name,
+                    ModifiedDate = per.ModifiedDate
+                }).OrderByDescending(x=>x.ModifiedDate).ToList();
+            }
+        }
+            #endregion
+
+                #region FindManagersInEachDepartment()
+        /// <summary>
+        ///  write a query in SQL to make a list of contacts who are designated as 'Purchasing Manager'.
+        ///  Return BusinessEntityID, LastName, and FirstName columns. Sort the result set in ascending order of LastName, and FirstName.
+        /// </summary>
+        private static void FindPurchasingManagers()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var query = db.BusinessEntityContacts.AsNoTracking().Include(x => x.Person).Include(x=>x.ContactType).Where(x => x.ContactType.Name.Contains("Purchasing Manager")).
+                    OrderBy(x => x.Person.FirstName).ThenBy(x => x.Person.LastName).
+                    Select(per => new
+                    {
+                        BusinessEntityId = per.BusinessEntityId,
+                        Last_Name = per.Person.LastName,
+                        First_Name = per.Person.FirstName
+                    }).ToList();
+            }
+        }
+            #endregion
+
+        #region FindManagersInEachDepartment()
+        /// <summary>
+        ///  to find the contacts who are designated as a manager in various departments.
+        ///  Returns ContactTypeID, name. Sort the result set in descending order.
+        /// </summary>
+        private static void FindSalesPersonForEachPostalCode()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var query = db.BusinessEntityContacts.AsNoTracking().Include(x => x.Person).Include(x=>x.ContactType).Where(x => x.ContactType.Name.Contains("Purchasing Manager")).OrderBy(x => x.Person.FirstName).ThenBy(x => x.Person.LastName).
+                    Select(per => new
+                    {
+                        BusinessEntityId = per.BusinessEntityId,
+                        PersonId = per.PersonId,
+                        rowguid = per.Rowguid,
+                        ModifiedDate = per.ModifiedDate
+                    }).ToList();
+            }
+        }
+        #endregion
+
+        //        #region FindSalesPersonForeachPostalCode() (To Figure it out)
+        ///// <summary>
+        /////  write a query in SQL to retrieve the salesperson for each PostalCode who belongs to a territory and SalesYTD is not zero. 
+        /////  Return row numbers of each group of PostalCode, last name, salesytd, postalcode column. Sort the salesytd of each postalcode group in descending order. Shorts the postalcode in ascending order.
+        ///// </summary>
+        //private static void FindSalesPersonForEachPostalCode()
+        //{
+        //    using (var db = new AdWorksContext(_optionsBuilder.Options))
+        //    {
+        //        var query = db.SalesPeople.
+        //        {
+        //            x.
+        //        })
+        //    }
+        //}
+        //#endregion
+
+        #region LINQ101 CompoundSelectWithMultipleWhere
+        /// <summary>
+        /// Some inherintedly meaningless query just for the sake of syntaxic procedure drilling.
+        /// </summary>
+        private static void CompoundSelectWithMultipleWhere()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var query = from entity in db.BusinessEntities.AsNoTracking()
+                            where entity.BusinessEntityId > 50 && entity.BusinessEntityId < 60
+                            from p in db.People.AsNoTracking()
+                            where p.LastName.Contains("W")
+                            select new
+                            {
+                                EntityId = entity.BusinessEntityId,
+                                CustomersCount = p.Customers.Count()
+                            };
+                query.ToList();
             }
         }
         #endregion
@@ -392,18 +493,19 @@ namespace FunWithEFAdventureReverse {
 
         #region ConsoleOutputFunctions
         private static string GetSalespersonDetail(SalesPerson sp)
-        {
-            return $"ID: {sp.BusinessEntityId}\t|TID: {sp.TerritoryId}\t|Quota:{sp.SalesQuota}\t" +
-            $"|Bonus: {sp.Bonus}\t|YTDSales: {sp.SalesYtd}\t|Name: \t" +
-            $"{sp.BusinessEntity?.BusinessEntity?.FirstName ?? ""}, " +
-            $"{sp.BusinessEntity?.BusinessEntity?.LastName ?? ""}";
-        }
+            {
+                return $"ID: {sp.BusinessEntityId}\t|TID: {sp.TerritoryId}\t|Quota:{sp.SalesQuota}\t" +
+                $"|Bonus: {sp.Bonus}\t|YTDSales: {sp.SalesYtd}\t|Name: \t" +
+                $"{sp.BusinessEntity?.BusinessEntity?.FirstName ?? ""}, " +
+                $"{sp.BusinessEntity?.BusinessEntity?.LastName ?? ""}";
+            }
 
-        private static string GetEmployeeDetail(Employee em)
-        {
-            return $"NationalID: {em.NationalIdnumber}\t|BirthDate: {em.BirthDate}\t|BEnId:{em.BusinessEntityId}\t" +
-            $"|JobTitle: {em.JobTitle}\t|HireDate: {em.HireDate}\t|";
+            private static string GetEmployeeDetail(Employee em)
+            {
+                return $"NationalID: {em.NationalIdnumber}\t|BirthDate: {em.BirthDate}\t|BEnId:{em.BusinessEntityId}\t" +
+                $"|JobTitle: {em.JobTitle}\t|HireDate: {em.HireDate}\t|";
+            }
+            #endregion
         }
-        #endregion
-    }
-}
+    } 
+
