@@ -47,6 +47,8 @@ namespace FunWithEFAdventureReverse {
             _dict.Add(16, () => CompoundSelectWithMultipleWhere());
             _dict.Add(18, () => FindTheComboContactTypeName());
             _dict.Add(17, () => NestedGroupQueries());
+            _dict.Add(19, () => CompoundSelectWithIndex());
+
         }
 
         static Action returnAction(IDictionary<int, Action> dic, int key)
@@ -414,7 +416,7 @@ namespace FunWithEFAdventureReverse {
         }
             #endregion
 
-                #region FindManagersInEachDepartment()
+        #region FindManagersInEachDepartment()
         /// <summary>
         ///  write a query in SQL to make a list of contacts who are designated as 'Purchasing Manager'.
         ///  Return BusinessEntityID, LastName, and FirstName columns. Sort the result set in ascending order of LastName, and FirstName.
@@ -530,7 +532,19 @@ namespace FunWithEFAdventureReverse {
         }
         #endregion
 
-
+        #region LINQ101 CompoundSelectWithIndex
+         /// <summary>
+        /// Another meaningless query, serving no business purpose, but a scholastic exercise.
+        /// </summary>
+        private static void CompoundSelectWithIndex()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var query = db.BusinessEntities.AsNoTracking().AsEnumerable().SelectMany((ent, index) =>
+                ent.BusinessEntityContacts.Select(c => (index + 1) + " " +c.Rowguid)).ToList(); // wouldn't work without AsEnumerable cannot translate to Expression Tree!!
+            }
+        }
+        #endregion
 
         #region ConsoleOutputFunctions
         private static string GetSalespersonDetail(SalesPerson sp)
