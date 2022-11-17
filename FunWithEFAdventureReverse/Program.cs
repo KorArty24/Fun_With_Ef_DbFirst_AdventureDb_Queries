@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 
 namespace FunWithEFAdventureReverse {
@@ -44,8 +45,8 @@ namespace FunWithEFAdventureReverse {
             _dict.Add(14, () => FindTotalSalesForEachYearFilteredByYear());
             _dict.Add(15, () => FindManagersInEachDepartment());
             _dict.Add(16, () => CompoundSelectWithMultipleWhere());
-            _dict.Add(17, () => FindSalesPersonForEachPostalCode());
-            _dict.Add(18, () => NestedGroupQueries());
+            _dict.Add(18, () => FindTheComboContactTypeName());
+            _dict.Add(17, () => NestedGroupQueries());
         }
 
         static Action returnAction(IDictionary<int, Action> dic, int key)
@@ -455,33 +456,35 @@ namespace FunWithEFAdventureReverse {
         }
         #endregion
 
-        #region FindSalesPersonForeachPostalCode() (To Figure it out)
+        #region FindTheComboContactTypeName
         /// <summary>
-        ///  write a query in SQL to retrieve the salesperson for each PostalCode who belongs to a territory and SalesYTD is not zero. 
-        ///  Return row numbers of each group of PostalCode, last name, salesytd, postalcode column. Sort the salesytd of each postalcode group in descending order. Shorts the postalcode in ascending order.
+        /// From the following table write a query in SQL to count the number of contacts for combination of each type and name. 
+        /// Filter the output for those who have 100 or more contacts. 
+        /// Return ContactTypeID and ContactTypeName and BusinessEntityContact.
+        /// Sort the result set in descending order on number of contacts.
         /// </summary>
-        private static void FindSalesPersonForEachPostalCode()
+        private static void FindTheComboContactTypeName()
         {
             using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
-                //const decimal zer = 0;
-                //var query = from sperson in db.SalesPeople
-                //            where (sperson.SalesYtd != zer) && (sperson.TerritoryId != null)
-                //            group sperson by sperson.SalesYtd
-                //            into salesgrp
-                //            from person in db.People
-                //            from address in db.Addresses
-                //            group new {person, address } by new { person.LastName, address.PostalCode }
-                //            into grp
-                //            {
-                                
-                //            };
-                //var res = query.ToList();
-
+                var query = from ec in db.BusinessEntityContacts.AsNoTracking().Include(c=>c.ContactType)
+                            group ec by new
+                            {
+                                ContactTypeId = ec.ContactType.ContactTypeId,
+                                Name = ec.ContactType.Name
+                            } into grp
+                            where grp.Count() >100
+                            select new
+                            {
+                                Key = grp.Key.ContactTypeId,
+                                Key2 = grp.Key.Name,
+                                Count = grp.Count()
+                            };
+                var res = query.ToList();
             }
         }
-
         #endregion
+
         #region LINQ101PostalCode() 
         /// <summary>
         ///  
