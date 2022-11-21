@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
@@ -24,7 +25,6 @@ namespace FunWithEFAdventureReverse {
             BuildOptions();
             registerMethods(ref dict);
             returnAction(dict, dict.Count).Invoke();
-
         }
 
         private static void registerMethods(ref Dictionary<int, Action> _dict)
@@ -48,6 +48,8 @@ namespace FunWithEFAdventureReverse {
             _dict.Add(18, () => FindTheComboContactTypeName());
             _dict.Add(17, () => NestedGroupQueries());
             _dict.Add(19, () => CompoundSelectWithIndex());
+            _dict.Add(20, () => SelectProductReviewFiltered());
+
 
         }
 
@@ -528,6 +530,20 @@ namespace FunWithEFAdventureReverse {
                                 CustomersCount = p.Customers.Count()
                             };
                 query.ToList();
+            }
+        }
+        #endregion
+    
+        #region SelectManyWithOverrideCollectionSelector() 
+        /// <summary>
+        ///  Just another scholastic meaningles query, demonstrating override of SelectMany (see Paolo Pialorsi, "Programming LINQ" 2010, p57)
+        /// </summary>
+        private static void SelectProductReviewFiltered()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var result = db.Products.AsNoTracking().Where(p => p.Name.Contains("t")).
+                    SelectMany(p => p.ProductReviews, (p, t) => new { Address= t.EmailAddress, ReviDate =t.ReviewDate }).ToList();
             }
         }
         #endregion
