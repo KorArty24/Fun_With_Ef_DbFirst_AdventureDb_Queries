@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using EFCore_DBLibrary;
 using FunWithEFAdventureReverse.Extensions;
+using FunWithEFAdventureReverse.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -49,7 +50,7 @@ namespace FunWithEFAdventureReverse {
             _dict.Add(17, () => NestedGroupQueries());
             _dict.Add(19, () => CompoundSelectWithIndex());
             _dict.Add(20, () => SelectProductReviewFiltered());
-
+            _dict.Add(21, () => RetrieveTotalCost());
 
         }
 
@@ -548,8 +549,28 @@ namespace FunWithEFAdventureReverse {
         }
         #endregion
 
+        #region retrieve the total cost of each salesorderID that exceeds 100000
+        /// <summary>
+        ///  write a query to retrieve the total cost of each 
+        ///  salesorderID that exceeds 100000. Return SalesOrderID,
+        /// </summary>
+        private static void RetrieveTotalCost()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var result = db.SalesOrderDetails.AsNoTracking().
+                    GroupBy(n => n.SalesOrderId).Select(n => new
+                    {
+                        SalesOrderId = n.Key,
+                        OrderidCost = n.Sum(x => x.UnitPrice * x.OrderQty)
+                    }).Where(p => p.OrderidCost > 100_000).ToList();
+            }
+        }
+
+        #endregion
+
         #region LINQ101 CompoundSelectWithIndex
-         /// <summary>
+        /// <summary>
         /// Another meaningless query, serving no business purpose, but a scholastic exercise.
         /// </summary>
         private static void CompoundSelectWithIndex()
