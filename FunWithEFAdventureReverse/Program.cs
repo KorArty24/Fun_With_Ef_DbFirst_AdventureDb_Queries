@@ -51,6 +51,7 @@ namespace FunWithEFAdventureReverse {
             _dict.Add(19, () => CompoundSelectWithIndex());
             _dict.Add(20, () => SelectProductReviewFiltered());
             _dict.Add(21, () => RetrieveTotalCost());
+            _dict.Add(22, () => RetriveLockWasher());
 
         }
 
@@ -564,6 +565,26 @@ namespace FunWithEFAdventureReverse {
                         SalesOrderId = n.Key,
                         OrderidCost = n.Sum(x => x.UnitPrice * x.OrderQty)
                     }).Where(p => p.OrderidCost > 100_000).ToList();
+            }
+        }
+
+        #endregion
+
+         #region retrive products whose names start with 'Lock Washer'. 
+        /// <summary>
+        ///   write a query in LINQ to retrieve products whose names start with 
+        ///   'Lock Washer'. Return product ID,
+        ///   and name and order the result set in ascending order on product ID column.
+        /// </summary>
+        private static void RetriveLockWasher()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var result = db.Products.Where(p => p.Name.StartsWith("Lock Washer")).Select(p => new
+                {
+                    productId = p.ProductId,
+                    Name = p.Name
+                }).OrderBy(x => x.productId).ToList();
             }
         }
 
