@@ -52,7 +52,9 @@ namespace FunWithEFAdventureReverse {
             _dict.Add(20, () => SelectProductReviewFiltered());
             _dict.Add(21, () => RetrieveTotalCost());
             _dict.Add(22, () => RetriveLockWasher());
-
+            _dict.Add(23, () => GroupWith());
+            _dict.Add(24, () => GroupWithIDNested());
+            _dict.Add(25, () => SelectOrderDetail());
         }
 
         static Action returnAction(IDictionary<int, Action> dic, int key)
@@ -590,6 +592,85 @@ namespace FunWithEFAdventureReverse {
 
         #endregion
 
+        #region LINQ101GROUPWIthEF
+         private static void GroupWith()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var result = from p in db.Products.AsEnumerable()
+                             select
+                             (
+                             p.Name,
+                             ProductGroups: from v in p.ProductVendors
+                                            group v by v.BusinessEntityId into yg
+                                            select (
+                                            entityId: yg.Key,
+                                            Groups: from o in yg
+                                                    group o by o.ProductId into mg
+                                                    select (ProdId: mg.Key,
+                                                    Vendors: mg))
+                             );
+            }
+        }
+        #endregion
+
+        #region LINQ101GROUPNestedById
+         private static void GroupWithIDNested()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var result = from p in db.Products.AsEnumerable()
+                             select (
+                             p.Name,
+                             ProductGroup:
+                             from v in p.ProductVendors
+                             group v by v.BusinessEntityId
+                             into gro
+                             select (BEntityId: gro.Key,
+                             BCount: gro.Count()));
+                foreach (var gr in result)
+                {
+                    Console.WriteLine($"Name: {gr.Name}");
+                    foreach(var subgr in gr.ProductGroup)
+                    {
+                        Console.WriteLine($"BuEId: {subgr.BEntityId}");
+                        Console.WriteLine($"Count: {subgr.BCount}");
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region LINQ101NestedGroupBy1()
+        private static void GroupByNested1()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var result = db.Products.GroupBy(p => p.Color).Count();
+            }
+        }
+        #endregion
+
+        #region SelectSalesOrderDetail
+        /// <summary>
+        ///  Just another scholastic meaningles query, demonstrating override of SelectMany (see Paolo Pialorsi, "Programming LINQ" 2010, p57)
+        /// </summary>
+        private static void SelectOrderDetail()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var result = (from p in db.Products.AsNoTracking().AsEnumerable()
+                              from b in db.SalesOrderDetails.AsNoTracking().AsEnumerable().DefaultIfEmpty()
+                              where p.ProductId == b.ProductId
+                              select new
+                              {
+                                  p.Name,
+                                  b.SalesOrderId
+                              }).ToList();  
+            }
+        }
+        #endregion
+
         #region LINQ101 CompoundSelectWithIndex
         /// <summary>
         /// Another meaningless query, serving no business purpose, but a scholastic exercise.
@@ -619,6 +700,7 @@ namespace FunWithEFAdventureReverse {
                 $"|JobTitle: {em.JobTitle}\t|HireDate: {em.HireDate}\t|";
             }
             #endregion
+
         }
     } 
 
