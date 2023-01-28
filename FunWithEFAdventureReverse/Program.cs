@@ -56,6 +56,7 @@ namespace FunWithEFAdventureReverse {
             _dict.Add(24, () => GroupWithIDNested());
             _dict.Add(25, ()=>SelectOrderDetail());
             _dict.Add(26, () => SelectWithLeftOuterJoin());
+            _dict.Add(27, () => SelectMaxinEachGroup());
         }
 
         static Action returnAction(IDictionary<int, Action> dic, int key)
@@ -573,7 +574,7 @@ namespace FunWithEFAdventureReverse {
 
         #endregion
 
-         #region retrive products whose names start with 'Lock Washer'. 
+        #region retrive products whose names start with 'Lock Washer'. 
         /// <summary>
         ///   write a query in LINQ to retrieve products whose names start with 
         ///   'Lock Washer'. Return product ID,
@@ -691,6 +692,19 @@ namespace FunWithEFAdventureReverse {
         }
         #endregion
 
+        #region LINQ101_Aggregation
+          private static void SelectMaxinEachGroup()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var result = db.Products.AsNoTracking().GroupBy(p => p.Color).Select(cg => new
+                {
+                    Color = cg.Key,
+                    HighestScore = cg.Select(p2 => p2.Size).Max()
+                }).ToList();
+            }
+        }
+        #endregion
 
         #region LINQ101 CompoundSelectWithIndex
         /// <summary>
