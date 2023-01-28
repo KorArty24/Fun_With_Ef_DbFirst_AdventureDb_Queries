@@ -55,6 +55,7 @@ namespace FunWithEFAdventureReverse {
             _dict.Add(23, () => GroupWith());
             _dict.Add(24, () => GroupWithIDNested());
             _dict.Add(25, ()=>SelectOrderDetail());
+            _dict.Add(26, () => SelectWithLeftOuterJoin());
         }
 
         static Action returnAction(IDictionary<int, Action> dic, int key)
@@ -659,8 +660,8 @@ namespace FunWithEFAdventureReverse {
         {
             using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
-                var result = (from p in db.Products.AsNoTracking().AsEnumerable()
-                              join b in db.SalesOrderDetails.AsNoTracking().AsEnumerable().DefaultIfEmpty()
+                var result = (from p in db.Products
+                              join b in db.SalesOrderDetails.DefaultIfEmpty()
                               on p.ProductId equals b.ProductId
                               select new
                               {
@@ -670,6 +671,26 @@ namespace FunWithEFAdventureReverse {
             }
         }
         #endregion
+
+        #region DefaultIfEmptyExercise
+        /// <summary>
+        ///  J
+        /// </summary>
+        private static void SelectWithLeftOuterJoin()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var result = (from p in db.Products.AsNoTracking()
+                              from b in p.ProductReviews.DefaultIfEmpty()
+                              select new
+                              {
+                                 Name = p.Name,
+                                 ReviewDate = b.ReviewDate
+                              }).ToList();  
+            }
+        }
+        #endregion
+
 
         #region LINQ101 CompoundSelectWithIndex
         /// <summary>
