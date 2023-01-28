@@ -54,7 +54,7 @@ namespace FunWithEFAdventureReverse {
             _dict.Add(22, () => RetriveLockWasher());
             _dict.Add(23, () => GroupWith());
             _dict.Add(24, () => GroupWithIDNested());
-            _dict.Add(25, () => SelectOrderDetail());
+            _dict.Add(25, ()=>SelectOrderDetail());
         }
 
         static Action returnAction(IDictionary<int, Action> dic, int key)
@@ -653,15 +653,15 @@ namespace FunWithEFAdventureReverse {
 
         #region SelectSalesOrderDetail
         /// <summary>
-        ///  Just another scholastic meaningles query, demonstrating override of SelectMany (see Paolo Pialorsi, "Programming LINQ" 2010, p57)
+        ///  J
         /// </summary>
         private static void SelectOrderDetail()
         {
             using (var db = new AdWorksContext(_optionsBuilder.Options))
             {
                 var result = (from p in db.Products.AsNoTracking().AsEnumerable()
-                              from b in db.SalesOrderDetails.AsNoTracking().AsEnumerable().DefaultIfEmpty()
-                              where p.ProductId == b.ProductId
+                              join b in db.SalesOrderDetails.AsNoTracking().AsEnumerable().DefaultIfEmpty()
+                              on p.ProductId equals b.ProductId
                               select new
                               {
                                   p.Name,
