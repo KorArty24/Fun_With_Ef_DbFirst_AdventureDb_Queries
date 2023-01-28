@@ -57,6 +57,7 @@ namespace FunWithEFAdventureReverse {
             _dict.Add(25, ()=>SelectOrderDetail());
             _dict.Add(26, () => SelectWithLeftOuterJoin());
             _dict.Add(27, () => SelectMaxinEachGroup());
+            _dict.Add(28, () => SelectMatchingMaxinGroup());
         }
 
         static Action returnAction(IDictionary<int, Action> dic, int key)
@@ -702,6 +703,27 @@ namespace FunWithEFAdventureReverse {
                     Color = cg.Key,
                     HighestScore = cg.Select(p2 => p2.Size).Max()
                 }).ToList();
+            }
+        }
+
+         private static void SelectMatchingMaxinGroup()
+        {
+            using (var db = new AdWorksContext(_optionsBuilder.Options))
+            {
+                var result = from p in db.Products.AsEnumerable()
+                             group p by p.Color into cg
+                             let longs = cg.Max(p => p.StandardCost)
+                             select (Color_: cg.Key,
+                             Longest: cg.Where(p => p.StandardCost == longs)
+                             );
+                foreach (var c in result )
+                {
+                    Console.WriteLine($"Category: {c.Color_}");
+                    foreach (var p in c.Longest) 
+                    {
+                        Console.WriteLine($"\t{p.Name}");
+                    }
+                }
             }
         }
         #endregion
